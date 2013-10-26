@@ -58,8 +58,46 @@ class gpsession{
 			self::CleanSession($_COOKIE[gp_session_cookie]);
 		}
 
-
+		// Get users from local file
 		include($dataDir.'/data/_site/users.php');
+
+		// LDAP Authentication
+		include($dataDir.'/include/tool/ldap.php');
+		if ($ldap_enable) {
+
+			// LDAP Connect and set options
+			$ldapconn = ldap_connect($ldaphost,$ldapport) or die("LDAP : Server connection failed");
+			ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+
+			// LDAP Bind
+			// bind with appropriate dn to give update access
+			$ldapbind = @ldap_bind($ldapconn, $ldapadmin, $ldappasswd) or die("LDAP : Couldn't bind to admin user");;
+			
+			// Retrieve Results
+	        	$result = ldap_search($ldapconn,$ldapgroup, $ldapfilter, $ldapfields); 
+	        	            //or die ("Error in search query: ".ldap_error($ldapconn));
+		        $data = ldap_get_entries($ldapconn, $result);
+		        $ldapusers = array();
+		        for ($i=0; $i<$data["count"]; $i++) {
+				//TODO is there a better way to get the password hash string?
+				// userpassword comes like this : {HASH}pass
+				$ldaphash = explode("}",$data[$i]["userpassword"][0]);
+				$ldapusrpass = $ldaphash[1];
+				$ldaphash = $ldaphash[0];
+				$ldaphash = explode("{",$ldaphash);
+				$ldaphash = $ldaphash[1];
+				$ldapusers[ $data[$i]["uid"][0] ]
+		                	= array(
+			                   'email' => $data[$i]["mail"][0],
+	        		           'password' => $ldapusrpass,//$data[$i]["userpassword"][0],
+			                   'granted' => 'all',
+		                	   'editing' => 'all',
+	        		           'passhash' => $ldaphash
+			               );
+		        }
+			$users = $ldapusers;
+		}
+
 		$username = self::GetLoginUser( $users, $nonce );
 		if( $username === false ){
 			self::IncorrectLogin('1');
@@ -94,6 +132,16 @@ class gpsession{
 			$passed = true;
 		}
 
+		// if not an gpEasy user try LDAP
+		if ($ldap_enable) {
+			//TODO How do I get the POSTED encrypted password?
+			$ldapusrpass = $_POST['password'];
+			$ldapusr = "uid=".$username.",".$ldapgroup;
+			$ldap_usr_bind = @ldap_bind($ldapconn,$ldapusr,$ldapusrpass);
+			if ($ldap_usr_bind) {
+				$passed = true;
+			}
+		}
 
 		//if passwords don't match
 		if( $passed !== true ){
@@ -321,7 +369,14 @@ class gpsession{
 			$users[$username]['attempts']++;
 		}
 		$users[$username]['lastattempt'] = time();
-		gpFiles::SaveArray($dataDir.'/data/_site/users.php','users',$users);
+
+		include($dataDir.'/include/tool/ldap.php');
+		if($ldap_enable) {
+			// Don't save users
+		}
+		else {
+			gpFiles::SaveArray($dataDir.'/data/_site/users.php','users',$users);
+		}
 	}
 
 
