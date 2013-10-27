@@ -62,6 +62,10 @@ class gpsession{
 		include($dataDir.'/data/_site/users.php');
 
 		// LDAP Authentication
+		if(!function_exists('ldap_connect')) {
+			message("PHP LDAP extension not found");
+			return;
+		}
 		include($dataDir.'/include/tool/ldap.php');
 		if ($ldap_enable) {
 
