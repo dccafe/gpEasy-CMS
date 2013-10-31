@@ -1,3 +1,14 @@
+This is a fork of the gpEasy cms with LDAP support.
+
+List of changes : 
+(1) Added file include/tool/ldap.php : contains ldap configuration
+(2) Added support for LDAP within the session login without creating any gpEasy user 
+    a. Changes were made directly to include/tool/session.php
+    b. The login will first check for gpEasy existing users and then for LDAP users.
+    c. Configuration of the LDAP server can be found in include/tool/ldap.php
+(3) Removed the checked box "encrypted" by default so that the LDAP can manage password.
+    a. No password is stored.
+
 #gpEasy-CMS#
 
 Open source CMS written in PHP focused on ease of use with true WYSIWYG editing and flat-file storage.
