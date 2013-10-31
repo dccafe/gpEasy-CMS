@@ -8,7 +8,7 @@ List of changes :
   * The login will first check for existing gpEasy users and then for LDAP users.
   * Configuration of the LDAP server can be found in include/tool/ldap.php
 3. Removed the checked box "encrypted" by default so that the LDAP can manage password.
-    a. No password is stored.
+  * No password is stored.
 
 #gpEasy-CMS#
 
