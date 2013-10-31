@@ -421,7 +421,8 @@ class admin_display extends display{
 			echo '</label> ';
 
 			echo '<label>';
-			echo '<input type="checkbox" name="encrypted" '.$this->checked('encrypted').'/> ';
+			//echo '<input type="checkbox" name="encrypted" '.$this->checked('encrypted').'/> ';
+			echo '<input type="checkbox" name="encrypted" /> ';
 			echo '<span>'.$langmessage['send_encrypted'].'</span>';
 			echo '</label>';
 			echo '</p>';
