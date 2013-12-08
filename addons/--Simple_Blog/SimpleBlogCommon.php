@@ -411,7 +411,7 @@ class SimpleBlogCommon{
 	 *
 	 */
 	function SaveNew(){
-		global $langmessage;
+		global $langmessage, $gpAdmin;
 
 		$_POST += array('title'=>'', 'content'=>'', 'subtitle'=>'', 'isDraft'=>'','category'=>array());
 
@@ -448,6 +448,9 @@ class SimpleBlogCommon{
 
 		$time = time();
 		$posts[$post_index]['time'] = $time;
+
+		// Save author username
+		$posts[$post_index]['username'] = $gpAdmin['username'];
 
 		//save to data file
 		if( !gpFiles::SaveArray($post_file,'posts',$posts) ){
@@ -527,6 +530,8 @@ class SimpleBlogCommon{
 			return false;
 		}
 
+		//update title
+		SimpleBlogCommon::AStrValue('titles',$post_index,$title);
 
 		//find and update the edited post in categories and archives
 		$this->update_post_in_categories($post_index,$title);

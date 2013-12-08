@@ -99,16 +99,21 @@ class gpOutput{
 	 */
 	static function Flush(){
 		global $page;
-		header('Content-Type: text/html; charset=utf-8');
+		self::StandardHeaders();
 		echo GetMessages();
 		echo $page->contentBuffer;
 	}
 
 	static function Content(){
 		global $page;
-		header('Content-Type: text/html; charset=utf-8');
+		self::StandardHeaders();
 		echo GetMessages();
 		$page->GetGpxContent();
+	}
+
+	static function StandardHeaders(){
+		header('Content-Type: text/html; charset=utf-8');
+		Header('Vary: Accept,Accept-Encoding');// for proxies
 	}
 
 	/**
@@ -122,7 +127,8 @@ class gpOutput{
 
 		gpOutput::TemplateSettings();
 
-		header('Content-Type: text/html; charset=utf-8');
+		self::StandardHeaders();
+
 		echo '<!DOCTYPE html><html><head><meta charset="UTF-8" />';
 		gpOutput::getHead();
 		echo '</head>';
@@ -156,7 +162,9 @@ class gpOutput{
 			$addon_current_id = $page->theme_addon_id;
 		}
 		gpOutput::TemplateSettings();
-		header('Content-Type: text/html; charset=utf-8');
+
+		self::StandardHeaders();
+
 		$path = $page->theme_dir.'/template.php';
 		$return = IncludeScript($path,'require',array('page','GP_ARRANGE','GP_MENU_LINKS','GP_MENU_CLASS','GP_MENU_CLASSES','GP_MENU_ELEMENTS'));
 
@@ -1813,7 +1821,6 @@ class gpOutput{
 
 	static function HeadContent(){
 		global $config, $page, $gp_head_content, $wbMessageBuffer;
-		$gp_head_content = '';
 
 		//before ob_start() so plugins can get buffer content
 		gpPlugin::Action('HeadContent');
@@ -1857,7 +1864,7 @@ class gpOutput{
 			echo $page->head;
 		}
 
-		$gp_head_content = ob_get_clean();
+		$gp_head_content .= ob_get_clean();
 	}
 
 	/**
@@ -2384,7 +2391,7 @@ class gpOutput{
 			$replacement = "\n".'<div style="position:absolute;top:-1px;right:0;z-index:10000;padding:5px 10px;background:rgba(255,255,255,0.95);border:1px solid rgba(0,0,0,0.2);font-size:11px">'
 					.'<b>Debug Tools</b>'
 					.'<table>'
-					//.'<tr><td>Memory Usage:</td><td> '.number_format(memory_get_usage()).'</td></tr>'
+					.'<tr><td>Memory Usage:</td><td> '.number_format(memory_get_usage()).'</td></tr>'
 					.'<tr><td>Memory:</td><td> '.number_format($max_used).'</td></tr>'
 					//.'<tr><td>% of Limit:</td><td> '.$percentage.'%</td></tr>'
 					.'<tr><td>Time (PHP):</td><td> '.microtime_diff(gp_start_time,microtime()).'</td></tr>'
@@ -2557,7 +2564,7 @@ class gpOutput{
 	 * @param string $names comma separated list of components
 	 *
 	 */
-	function GetComponents($names = ''){
+	static function GetComponents($names = ''){
 		includeFile('combine.php');
 		$scripts = gp_combine::ScriptInfo( $names );
 		gpOutput::CombineFiles($scripts['css'], 'css', false );
@@ -2599,6 +2606,7 @@ class gpOutput{
 
 
 			if( file_exists($dataDir.$compiled_file) ){
+				//msg('not returning');
 				return $compiled_file;
 			}
 
@@ -2645,24 +2653,40 @@ class gpOutput{
 	static function ParseLess( &$less_files ){
 		global $dataDir;
 
+		$compiled = false;
+
 		// don't use less if the memory limit is less than 64M
 		$limit = @ini_get('memory_limit');
+		$use_cache = false;
 		if( $limit ){
+			$use_cache = true;
 			$limit = common::getByteValue( $limit );
-			if( $limit < 67108864 && @ini_set('memory_limit','64M') === false ){
+
+			//if less than 64M, disable less compiler if we can't increase
+			if( $limit < 67108864 && @ini_set('memory_limit','96M') === false ){
 				if( common::LoggedIn() ){
 					msg('LESS compilation disabled. Please increase php\'s memory_limit');
 				}
 				return false;
+
+			//if less than 96M, try to increase
+			}elseif( $limit < 100663296 ){
+				if( @ini_set('memory_limit','96M') === false ){
+					$use_cache = false;
+				}
 			}
 		}
 
 
-
 		//prepare the processor
 		includeFile('thirdparty/less.php/Less.php');
-		$parser = new Less_Parser(); //array('compress'=>true)
-		$parser->SetCacheDir( $dataDir.'/data/_cache' );
+		$parser = new Less_Parser(); //array('compress'=>true));
+
+		// Only use caching if php has plenty of memory
+		// Caching uses php's serialize() method and needs additional memory
+		if( $use_cache ){
+			$parser->SetCacheDir( $dataDir.'/data/_cache' );
+		}
 
 		$import_dirs[$dataDir] = common::GetDir('/');
 		$parser->SetImportDirs($import_dirs);
@@ -2697,6 +2721,13 @@ class gpOutput{
 			}
 			return false;
 		}
+
+
+		// significant difference in used memory 15,000,000 -> 6,000,000. Max still @ 15,000,000
+		if( function_exists('gc_collect_cycles') ){
+			gc_collect_cycles();
+		}
+
 
 		$less_files = $parser->allParsedFiles();
 		return $compiled;

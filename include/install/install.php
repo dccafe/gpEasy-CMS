@@ -380,7 +380,7 @@ class gp_install{
 			echo '</td>';
 
 			//can't get memory_limit value
-			if( @ini_set('memory_limit','64M') !== false ){
+			if( @ini_set('memory_limit','96M') !== false ){
 				echo '<td class="passed">'.$langmessage['Passed'].'</td>';
 				echo '<td class="passed">Adjustable</td>';
 
@@ -391,11 +391,16 @@ class gp_install{
 				echo '</td>';
 
 			}else{
-
 				$byte_value = common::getByteValue($checkValue);
-				if( $byte_value > 67108864 ){
+				if( $byte_value > 100663296 ){
 					echo '<td class="passed">'.$langmessage['Passed'].'</td>';
 					echo '<td class="passed">';
+					echo $checkValue;
+					echo '</td>';
+
+				}elseif( $byte_value > 67108864 ){
+					echo '<td class="passed_orange">'.$langmessage['Passed'].'</td>';
+					echo '<td class="passed_orange">';
 					echo $checkValue;
 					echo '</td>';
 
@@ -405,7 +410,7 @@ class gp_install{
 					$ok = false;
 				}
 			}
-			echo '<td> <span style="font-size:10px">&gt;=</span>64M or Adjustable</td>';
+			echo '<td> 96M+ or Adjustable</td>';
 			echo '</tr>';
 
 
@@ -680,13 +685,11 @@ class gp_install{
 	function Installed(){
 		global $langmessage;
 		echo '<h4>'.$langmessage['Installation_Was_Successfull'].'</h4>';
-		echo '<ul>';
-		echo '<li>';
+
+		echo '<h2>';
 		echo common::Link('',$langmessage['View_your_web_site']);
-		echo '</li>';
-		echo '<li>';
-		echo common::Link('Admin',$langmessage['Log_in_and_start_editing']);
-		echo '</li>';
+		echo '</h2>';
+
 		echo '</ul>';
 
 		echo '<p>';

@@ -1,6 +1,7 @@
 <?php
 defined('is_running') or die('Not an entry point...');
 
+includeFile('tool/gpOutput.php');
 
 
 class Install_Tools{
@@ -21,11 +22,11 @@ class Install_Tools{
 		$_POST += array('username'=>'','site_title'=>'My gpEasy CMS','email'=>'');
 
 		echo '<tr><th colspan="2">'.$langmessage['configuration'].'</th></tr>';
-		echo '<tr><td>'.$langmessage['Website_Title'].'</td><td><input type="text" class="text" name="site_title" value="'.htmlspecialchars($_POST['site_title']).'" /></td></tr>';
-		echo '<tr><td>'.$langmessage['Admin_Username'].'</td><td><input type="text" class="text" name="username" value="'.htmlspecialchars($_POST['username']).'" /></td></tr>';
-		echo '<tr><td>'.$langmessage['email_address'].'</td><td><input type="text" class="text" name="email" value="'.htmlspecialchars($_POST['email']).'" /></td></tr>';
-		echo '<tr><td>'.$langmessage['Admin_Password'].'</td><td><input type="password" class="text" name="password" value="" /></td></tr>';
-		echo '<tr><td>'.$langmessage['repeat_password'].'</td><td><input type="password" class="text" name="password1" value="" /></td></tr>';
+		echo '<tr><td>'.$langmessage['Website_Title'].'</td><td><input type="text" class="text" name="site_title" value="'.htmlspecialchars($_POST['site_title']).'" required /></td></tr>';
+		echo '<tr><td>'.$langmessage['Admin_Username'].'</td><td><input type="text" class="text" name="username" value="'.htmlspecialchars($_POST['username']).'" required /></td></tr>';
+		echo '<tr><td>'.$langmessage['email_address'].'</td><td><input type="email" class="text" name="email" value="'.htmlspecialchars($_POST['email']).'" required /></td></tr>';
+		echo '<tr><td>'.$langmessage['Admin_Password'].'</td><td><input type="password" class="text" name="password" value="" required /></td></tr>';
+		echo '<tr><td>'.$langmessage['repeat_password'].'</td><td><input type="password" class="text" name="password1" value="" required /></td></tr>';
 	}
 
 	/**
@@ -177,9 +178,21 @@ class Install_Tools{
 		//$config = array(); //because of ftp values
 
 		$gpLayouts = array();
+
+
+		//use bootswatch theme if server has enough memory
 		$gpLayouts['default']['theme'] = 'Bootswatch_Flatly/4_Sticky_Footer';
+		$gpLayouts['default']['label'] = 'Bootswatch_Flatly/4_Sticky_Footer';
+		if( @ini_set('memory_limit','96M') === false ){
+			$limit = ini_get('memory_limit');
+			$limit = common::getByteValue($limit);
+			if( $limit < 100663296 ){
+				$gpLayouts['default']['theme'] = 'Three_point_5/Shore';
+				$gpLayouts['default']['label'] = 'Three_point_5/Shore';
+			}
+		}
+
 		$gpLayouts['default']['color'] = '#93c47d';
-		$gpLayouts['default']['label'] = $langmessage['default'];
 
 
 		$config['toemail'] = $_POST['email'];
@@ -461,12 +474,14 @@ class Install_Tools{
 
 		if( $base_install ){
 			Install_Tools::InstallHtaccess($destination,$config);
+			Install_Tools::PrepareLess();
 		}
 
 		gpFiles::Unlock('write',gp_random);
 
 		return true;
 	}
+
 
 	static function NewTitle( $dataDir, $title, $content ){
 
@@ -575,6 +590,12 @@ class Install_Tools{
 				fclose($temp);
 			}
 		}
+	}
+
+	static function PrepareLess(){
+		global $dataDir;
+		$less_files = $dataDir.'/include/css/admin.less';
+		gpOutput::CacheLess($less_files);
 	}
 
 

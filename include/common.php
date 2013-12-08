@@ -41,7 +41,7 @@ gp_defined('gp_unique_addons',false);
 //gp_defined('addon_browse_path','http://gpeasy.loc/index.php');
 gp_defined('addon_browse_path','http://gpeasy.com/index.php');
 
-define('gpversion','4.3rc2');
+define('gpversion','4.3.1');
 define('gp_random',common::RandomString());
 
 
@@ -780,8 +780,8 @@ class display{
 
 		if( !$layout_info ){
 			$this->gpLayout = false;
-			$this->theme_name = 'Bootswatch_Flatly';
-			$this->theme_color = '4_Sticky_Footer';
+			$this->theme_name = 'Three_point_5'; //'Bootswatch_Flatly';
+			$this->theme_color = 'Shore'; //'4_Sticky_Footer';
 			$this->theme_rel = '/themes/'.$this->theme_name.'/'.$this->theme_color;
 			$this->theme_dir = $dataDir.'/themes/'.$this->theme_name;
 
@@ -1113,6 +1113,7 @@ class common{
 			$ob_gzhandler = true;
 		}
 
+
 		common::SetGlobalPaths($level,$expecting);
 		includeFile('tool/gpOutput.php');
 		includeFile('tool/functions.php');
@@ -1255,7 +1256,7 @@ class common{
 		if( isset($_SERVER['gp_rewrite']) ){
 			if( $_SERVER['gp_rewrite'] === true || $_SERVER['gp_rewrite'] == 'On' ){
 				$_SERVER['gp_rewrite'] = true;
-			}elseif( $_SERVER['gp_rewrite'] == substr($config['gpuniq'],0,7) ){
+			}elseif( $_SERVER['gp_rewrite'] == @substr($config['gpuniq'],0,7) ){
 				$_SERVER['gp_rewrite'] = true;
 			}
 
@@ -1777,6 +1778,7 @@ class common{
 	 */
 	static function GetConfig(){
 		global $config, $dataDir, $gp_hooks;
+
 
 		require($dataDir.'/data/_site/config.php');
 		if( !is_array($config) || !array_key_exists('gpversion',$config) ){
